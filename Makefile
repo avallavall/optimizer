@@ -20,6 +20,10 @@ TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_TEST_DIR)/%.o,$(TEST_SRCS))
 # Compiler Configuration
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -pedantic -std=c2x -I$(SRC_DIR) -Iinclude
+
+# SCIP configuration for system-wide installation with scipoptsuite
+CFLAGS += -I/usr/include/scip
+LDFLAGS += -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
 TEST_CFLAGS = $(CFLAGS) -I$(TEST_DIR)
 TEST_LDFLAGS = -lcriterion
 
@@ -45,7 +49,7 @@ $(BUILD_DIR):
 
 # Main Application
 $(EXEC): $(OBJS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 
 # Test Executable
