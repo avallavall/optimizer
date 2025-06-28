@@ -3,15 +3,19 @@ SRC_DIR = src
 TEST_DIR = tests
 BUILD_DIR = build
 BUILD_TEST_DIR = $(BUILD_DIR)/tests
+WEB_DIR = web
 
 
 # Executables
 EXEC = $(BUILD_DIR)/main
 TEST_EXEC = $(BUILD_TEST_DIR)/run_tests
+WEB_EXEC = $(BUILD_DIR)/web_server
 
 
 # Source and Object Files
-SRCS = $(wildcard $(SRC_DIR)/*.c)
+# Recursively find all .c files in src and its subdirectories
+SRCS = $(shell find $(SRC_DIR) -name '*.c')
+# Create corresponding .o file paths in the build directory
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 # Find all test files in the tests directory
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
@@ -21,7 +25,7 @@ TEST_OBJS = $(patsubst $(TEST_DIR)/%,$(BUILD_TEST_DIR)/%.o,$(basename $(TEST_SRC
 
 # Compiler Configuration
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion -std=c2x -I$(SRC_DIR) -Iinclude
+CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion -std=c2x -I$(SRC_DIR) -Iinclude -Ilib/mongoose
 
 # Architecture-specific optimizations
 CFLAGS += -march=native -mtune=native
@@ -60,7 +64,7 @@ endif
 
 
 # Default Target
-all: $(EXEC)
+all: $(EXEC) web
 
 
 # Create build directories
@@ -69,14 +73,23 @@ $(BUILD_DIR):
 
 
 # Main Application
-$(EXEC): $(OBJS) | $(BUILD_DIR)
+$(EXEC): $(filter-out $(BUILD_DIR)/web_server.o, $(OBJS)) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Web Server
+$(WEB_EXEC): $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) $(BUILD_DIR)/web_server.o lib/mongoose/mongoose.o | $(BUILD_DIR)
+	$(CC) -o $@ $^ $(LDFLAGS) -pthread
 
 
 # Test Executable
 $(TEST_EXEC): $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
 	$(CC) $(TEST_CFLAGS) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS)
 
+
+# Compile mongoose library
+lib/mongoose/mongoose.o: lib/mongoose/mongoose.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -Wno-unused-function -DMG_ENABLE_LINES=1 -DMG_ENABLE_DIRECTORY_LISTING=0 -c $< -o $@
 
 # Compile main source files with dependency generation
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
@@ -109,6 +122,10 @@ test: $(TEST_EXEC)
 run: $(EXEC)
 	@./$(EXEC)
 
+# Run Web Server
+web: $(WEB_EXEC)
+	@./$(WEB_EXEC)
+
 
 # Clean Build Artifacts
 clean:
@@ -127,7 +144,7 @@ deps:
 
 # Help Message
 help:
-	@echo "\nUsage:\n  make [target]\n\nTargets:\n  all       Build the main application (default)\n  test      Build and run tests\n  run       Build and run the main application\n  clean     Remove build artifacts\n  deps      Install required dependencies (Debian/Ubuntu)\n  help      Show this help message\n\nFlags:\n  DEBUG=0   Build optimized release version\n  -jN       Compile with parallel jobs (e.g., make -j4)\n"
+	@echo "\nUsage:\n  make [target]\n\nTargets:\n  all       Build the main application (default)\n  test      Build and run tests\n  run       Build and run the main application\n  clean     Remove build artifacts\n  deps      Install required dependencies (Debian/Ubuntu)\n  web       Build and run the web server\n  help      Show this help message\n\nFlags:\n  DEBUG=0   Build optimized release version\n  -jN       Compile with parallel jobs (e.g., make -j4)\n"
 
 
-.PHONY: all clean run test deps help
+.PHONY: all clean run test deps help web

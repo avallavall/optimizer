@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "../include/problem_modeler.h"
+#include "../include/problems/sudoku/sudoku_solver.h"
 
 Test(sudoku, test_puzzle_creation) {
     int expected[9][9] = {

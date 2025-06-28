@@ -33,5 +33,6 @@ SCIP_RETCODE free_model();
 
 void create_puzzle();
 void print_puzzle();
+SCIP_RETCODE manage_sudoku_problem();
 
 #endif  
