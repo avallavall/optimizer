@@ -10,9 +10,9 @@ int main() {
     #endif
 
     // Initialize and print the puzzle
-    create_puzzle(puzzle);
+    create_puzzle();
     printf("Initial puzzle:\n");
-    print_puzzle(puzzle);
+    print_puzzle();
 
     // Initialize the model
     retcode = init_model();

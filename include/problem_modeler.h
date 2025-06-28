@@ -31,7 +31,7 @@ SCIP_RETCODE solve();
 void print_solution();
 SCIP_RETCODE free_model();
 
-void create_puzzle(int puzzle[9][9]);
-void print_puzzle(int puzzle[9][9]);
+void create_puzzle();
+void print_puzzle();
 
 #endif  

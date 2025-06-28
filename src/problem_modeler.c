@@ -14,7 +14,7 @@ SCIP_CONS* fillgrid_constrs[9][9] = {0};
 SCIP_Bool infeasible = FALSE;
 SCIP_Bool fixed = FALSE;
 
-void create_puzzle(int puzzle[9][9]) {
+void create_puzzle() {
     int initial[9][9] = {
         {5, 3, 0, 0, 7, 0, 0, 0, 0},
         {6, 0, 0, 1, 9, 5, 0, 0, 0},
@@ -34,7 +34,7 @@ void create_puzzle(int puzzle[9][9]) {
     }
 }
 
-void print_puzzle(int puzzle[9][9]) {
+void print_puzzle() {
     for (int i = 0; i < 9; i++) {
         if (i > 0 && i % 3 == 0) {
             printf("------+-------+------\n");
@@ -51,7 +51,7 @@ void print_puzzle(int puzzle[9][9]) {
 
 void print_solution() {
     printf("\nSolution:\n");
-    print_puzzle(puzzle);
+    print_puzzle();
 }
 
 SCIP_RETCODE init_model() {    

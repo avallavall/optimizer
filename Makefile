@@ -19,7 +19,18 @@ TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_TEST_DIR)/%.o,$(TEST_SRCS))
 
 # Compiler Configuration
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -std=c2x -I$(SRC_DIR) -Iinclude
+CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion \
+	-std=c2x -I$(SRC_DIR) -Iinclude
+
+# Architecture-specific optimizations
+CFLAGS += -march=native -mtune=native
+
+# Link-time optimization
+CFLAGS += -flto
+LDFLAGS += -flto
+
+# Linker optimizations
+LDFLAGS += -Wl,-O1 -Wl,--as-needed
 
 # SCIP configuration for system-wide installation with scipoptsuite
 CFLAGS += -I/usr/include/scip
@@ -42,8 +53,8 @@ else ifeq ($(DEBUG),2)
 
 # Release build
 else
-   CFLAGS += -O2 -DNDEBUG -s
-   LDFLAGS += -s
+   CFLAGS += -O2 -DNDEBUG -fvisibility=hidden
+   LDFLAGS += -s  # Only strip in final link
 endif
 
 
