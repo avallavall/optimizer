@@ -13,8 +13,10 @@ TEST_EXEC = $(BUILD_TEST_DIR)/run_tests
 # Source and Object Files
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+# Find all test files in the tests directory
 TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
-TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_TEST_DIR)/%.o,$(TEST_SRCS))
+# Create object file paths in the build directory
+TEST_OBJS = $(patsubst $(TEST_DIR)/%,$(BUILD_TEST_DIR)/%.o,$(basename $(TEST_SRCS)))
 
 
 # Compiler Configuration
@@ -73,7 +75,7 @@ $(EXEC): $(OBJS) | $(BUILD_DIR)
 
 # Test Executable
 $(TEST_EXEC): $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
-	$(CC) $(TEST_CFLAGS) -o $@ $^ $(TEST_LDFLAGS)
+	$(CC) $(TEST_CFLAGS) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS)
 
 
 # Compile main source files with dependency generation
@@ -84,8 +86,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 
 # Compile test files with dependency generation
 $(BUILD_TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
-	@mkdir -p $(dir $@)
+	@mkdir -p $(@D)
 	$(CC) $(TEST_CFLAGS) -MMD -MP -c $< -o $@
+
+# Create build directories
+$(BUILD_DIR) $(BUILD_TEST_DIR):
+	@mkdir -p $@
 
 
 # Include automatically generated dependencies
@@ -96,7 +102,7 @@ $(BUILD_TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
 # Run Tests
 test: $(TEST_EXEC)
 	@echo "Running tests..."
-	@$(TEST_EXEC)
+	@$(TEST_EXEC) --verbose
 
 
 # Run Program

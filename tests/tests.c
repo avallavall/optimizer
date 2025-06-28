@@ -1,5 +1,4 @@
 #include <criterion/criterion.h>
 
-Test(sanity, test_assertion) {
-    cr_assert(1 == 1, "1 should equal 1");
-}
+// This file is the main test runner.
+// Test cases are defined in separate files and will be automatically discovered.
