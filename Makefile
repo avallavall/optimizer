@@ -31,7 +31,8 @@ TEST_LDFLAGS = -lcriterion
 # Build Mode (debug by default)
 DEBUG ?= 1
 ifeq ($(DEBUG),1)
-   CFLAGS += -g -DDEBUG
+   CFLAGS += -g -DDEBUG -pg
+   LDFLAGS += -pg
 else
    CFLAGS += -O2 -DNDEBUG -s
    LDFLAGS += -s
