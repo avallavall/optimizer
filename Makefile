@@ -29,10 +29,18 @@ TEST_LDFLAGS = -lcriterion
 
 
 # Build Mode (debug by default)
-DEBUG ?= 1
+DEBUG ?= 0
+
+# Debug build with symbols
 ifeq ($(DEBUG),1)
-   CFLAGS += -g -DDEBUG -pg
+   CFLAGS += -g -DDEBUG
+
+# Debug build with profiling
+else ifeq ($(DEBUG),2)
+   CFLAGS += -g -DPROFILE -pg
    LDFLAGS += -pg
+
+# Release build
 else
    CFLAGS += -O2 -DNDEBUG -s
    LDFLAGS += -s
