@@ -19,8 +19,7 @@ TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_TEST_DIR)/%.o,$(TEST_SRCS))
 
 # Compiler Configuration
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion \
-	-std=c2x -I$(SRC_DIR) -Iinclude
+CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion -std=c2x -I$(SRC_DIR) -Iinclude
 
 # Architecture-specific optimizations
 CFLAGS += -march=native -mtune=native
