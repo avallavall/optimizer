@@ -47,7 +47,7 @@ RM = rm -rf
 # Base compiler flags
 WARNINGS = -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wdouble-promotion
 CFLAGS = -std=c2x $(WARNINGS)
-CFLAGS += -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose $(SCIP_CFLAGS)
+CFLAGS += $(INCLUDE_PATHS)
 
 # Architecture optimizations
 CFLAGS += -march=native -mtune=native
@@ -58,6 +58,13 @@ LDFLAGS = -flto -Wl,-O2,--as-needed $(SCIP_LIBS)
 # External libraries
 SCIP_CFLAGS = -I/usr/include/scip
 SCIP_LIBS = -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
+
+# cJSON library
+CJSON_CFLAGS = -I$(LIB_DIR)/cJSON
+CJSON_LIB = $(LIB_DIR)/cJSON/libcjson.a
+
+# Add cJSON to the include path
+INCLUDE_PATHS = -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose $(CJSON_CFLAGS) $(SCIP_CFLAGS)
 
 # Mongoose library
 MONGOOSE_LIB = $(LIB_DIR)/mongoose/mongoose.o
@@ -91,9 +98,9 @@ else
     BUILD_TYPE = release
 endif
 
-# Add SCIP flags
-CFLAGS += $(SCIP_CFLAGS)
-LDFLAGS += $(SCIP_LIBS)
+# Add SCIP and cJSON flags
+CFLAGS += $(SCIP_CFLAGS) $(CJSON_CFLAGS)
+LDFLAGS += $(SCIP_LIBS) $(CJSON_LIB)
 
 # ============================================================================
 # Build Rules
@@ -103,10 +110,16 @@ LDFLAGS += $(SCIP_LIBS)
 .PHONY: all
 all: $(EXEC)
 
-# Main executable
-$(EXEC): $(OBJS) $(MONGOOSE_LIB) | $(BUILD_DIR)
+# Build cJSON library
+$(LIB_DIR)/cJSON/libcjson.a:
+	@echo "[$(BUILD_TYPE)] Building cJSON library"
+	@$(MAKE) -C $(LIB_DIR)/cJSON static
+
+# Link the application
+$(EXEC): $(OBJS) $(MONGOOSE_LIB) $(CJSON_LIB)
 	@echo "[$(BUILD_TYPE)] Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) -pthread
+	@$(MKDIR) $(@D)
+	@$(CC) $(OBJS) $(MONGOOSE_LIB) $(CJSON_LIB) $(LDFLAGS) -o $@ -pthread
 
 # Test executable
 $(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) $(MONGOOSE_LIB) | $(BUILD_DIR)
@@ -160,7 +173,8 @@ test: $(TEST_EXEC)
 clean:
 	@echo "Cleaning build artifacts"
 	@$(RM) $(BUILD_DIR)
-	@$(RM) $(LIB_DIR)/mongoose/*.o
+	@find $(LIB_DIR) -name '*.o' -type f -delete
+	@$(MAKE) -C $(LIB_DIR)/cJSON clean
 
 # Clean everything including downloaded dependencies
 distclean: clean

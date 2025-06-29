@@ -8,9 +8,7 @@ int main(void) {
         printf("[DEBUG] Starting in debug mode\n");
     #endif
     
-    problem_manager_dispatch_solver(PROBLEM_MANAGER_TYPE_SUDOKU);
-    
     start_webserver();
 
-    return EXIT_SUCCESS;
+    return 0;
 }
