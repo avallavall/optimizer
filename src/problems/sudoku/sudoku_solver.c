@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <scip/scip.h>
 #include <scip/scipdefplugins.h>
 #include "problems/sudoku/sudoku_solver.h"
@@ -13,6 +15,35 @@ SCIP_CONS* subgrid_constrs[9][3][3] = {0};
 SCIP_CONS* fillgrid_constrs[9][9] = {0};
 SCIP_Bool infeasible = FALSE;
 SCIP_Bool fixed = FALSE;
+
+bool validate_sudoku_data(const char *data, char **error_msg) {
+    // For now, we don't use the input data or error_msg as the puzzle is hardcoded
+    // This is a placeholder for future implementation where puzzle can be loaded from data
+    (void)data;     // Mark as unused
+    (void)error_msg; // Mark as unused
+    
+    // Always return true for now since we're using a hardcoded puzzle
+    return true;
+}
+
+int solve_sudoku(const char *data, char **error_msg) {
+    // Validate input data
+    if (!validate_sudoku_data(data, error_msg)) {
+        return EXIT_FAILURE;
+    }
+    
+    // Call the existing SCIP-based solver
+    SCIP_RETCODE retcode = manage_sudoku_problem();
+    
+    if (retcode != SCIP_OKAY) {
+        if (error_msg) {
+            *error_msg = strdup("Failed to solve Sudoku puzzle");
+        }
+        return EXIT_FAILURE;
+    }
+    
+    return EXIT_SUCCESS;
+}
 
 void create_puzzle() {
     int initial[9][9] = {

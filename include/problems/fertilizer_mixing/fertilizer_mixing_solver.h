@@ -1,8 +1,10 @@
 #ifndef FERTILIZER_MIXING_SOLVER_H
 #define FERTILIZER_MIXING_SOLVER_H
 
-#include <scip/scip.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-SCIP_RETCODE manage_fertilizer_mixing_problem();
+bool validate_fertilizer_mixing_data(const char *data, char **error_msg);
+int solve_fertilizer_mixing(const char *data, char **error_msg);
 
 #endif

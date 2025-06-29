@@ -59,15 +59,8 @@ LDFLAGS = -flto -Wl,-O2,--as-needed $(SCIP_LIBS)
 SCIP_CFLAGS = -I/usr/include/scip
 SCIP_LIBS = -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
 
-# cJSON library
-CJSON_CFLAGS = -I$(LIB_DIR)/cJSON
-CJSON_LIB = $(LIB_DIR)/cJSON/libcjson.a
-
-# Add cJSON to the include path
-INCLUDE_PATHS = -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose $(CJSON_CFLAGS) $(SCIP_CFLAGS)
-
-# Mongoose library
-MONGOOSE_LIB = $(LIB_DIR)/mongoose/mongoose.o
+# Include paths
+INCLUDE_PATHS = -I$(INCLUDE_DIR) -I$(SRC_DIR) $(SCIP_CFLAGS)
 
 # Test framework
 TEST_CFLAGS = $(shell pkg-config --cflags criterion) -pthread -DCRITERION_ENABLE_DEBUG
@@ -98,9 +91,9 @@ else
     BUILD_TYPE = release
 endif
 
-# Add SCIP and cJSON flags
-CFLAGS += $(SCIP_CFLAGS) $(CJSON_CFLAGS)
-LDFLAGS += $(SCIP_LIBS) $(CJSON_LIB)
+# Add SCIP flags
+CFLAGS += $(SCIP_CFLAGS)
+LDFLAGS += $(SCIP_LIBS)
 
 # ============================================================================
 # Build Rules
@@ -110,29 +103,20 @@ LDFLAGS += $(SCIP_LIBS) $(CJSON_LIB)
 .PHONY: all
 all: $(EXEC)
 
-# Build cJSON library
-$(LIB_DIR)/cJSON/libcjson.a:
-	@echo "[$(BUILD_TYPE)] Building cJSON library"
-	@$(MAKE) -C $(LIB_DIR)/cJSON static
+
 
 # Link the application
-$(EXEC): $(OBJS) $(MONGOOSE_LIB) $(CJSON_LIB)
+$(EXEC): $(OBJS)
 	@echo "[$(BUILD_TYPE)] Linking $@"
 	@$(MKDIR) $(@D)
-	@$(CC) $(OBJS) $(MONGOOSE_LIB) $(CJSON_LIB) $(LDFLAGS) -o $@ -pthread
+	@$(CC) $(OBJS) $(LDFLAGS) -o $@ -pthread
 
 # Test executable
-$(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) $(MONGOOSE_LIB) | $(BUILD_DIR)
+$(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
 	@echo "[$(BUILD_TYPE)] Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS) -pthread
 
-# Compile Mongoose library
-$(LIB_DIR)/mongoose/mongoose.o: $(LIB_DIR)/mongoose/mongoose.c
-	@echo "[$(BUILD_TYPE)] Compiling $<"
-	@$(MKDIR) $(@D)
-	@$(CC) $(CFLAGS) -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_GNU_SOURCE \
-        -Wno-unused-function -DMG_ENABLE_LINES=1 -DMG_ENABLE_DIRECTORY_LISTING=0 \
-        -c $< -o $@
+
 
 # Compile source files
 $(BUILD_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_OBJ_DIR)
@@ -174,7 +158,6 @@ clean:
 	@echo "Cleaning build artifacts"
 	@$(RM) $(BUILD_DIR)
 	@find $(LIB_DIR) -name '*.o' -type f -delete
-	@$(MAKE) -C $(LIB_DIR)/cJSON clean
 
 # Clean everything including downloaded dependencies
 distclean: clean

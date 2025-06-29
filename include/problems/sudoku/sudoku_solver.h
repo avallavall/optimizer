@@ -1,17 +1,12 @@
-#ifndef PROBLEM_MODELER_H
-#define PROBLEM_MODELER_H
+#ifndef SUDOKU_SOLVER_H
+#define SUDOKU_SOLVER_H
+
 #include <scip/scip.h>
-extern SCIP* scip;
-extern int puzzle[9][9];
-extern SCIP_VAR* vars[9][9][9];
-extern SCIP_CONS* row_constrs[9][9]; 
-extern SCIP_CONS* col_constrs[9][9]; 
-extern SCIP_CONS* subgrid_constrs[9][3][3];
-extern SCIP_CONS* fillgrid_constrs[9][9];  
-extern SCIP_Bool infeasible;
-extern SCIP_Bool fixed;
+#include <stdbool.h>
 
-
+bool validate_sudoku_data(const char *data, char **error_msg);
+int solve_sudoku(const char *data, char **error_msg);
+SCIP_RETCODE manage_sudoku_problem();
 SCIP_RETCODE init_model();
 SCIP_RETCODE add_variables();
 SCIP_RETCODE create_constraints();
@@ -20,8 +15,4 @@ SCIP_RETCODE solve();
 void print_solution();
 SCIP_RETCODE free_model();
 
-void create_puzzle();
-void print_puzzle();
-SCIP_RETCODE manage_sudoku_problem();
-
-#endif  
+#endif
