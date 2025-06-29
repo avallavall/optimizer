@@ -46,12 +46,12 @@ After building with `DEBUG=2`, you can profile the application:
 
 2. Run your program to generate profiling data (`gmon.out`):
    ```bash
-   ./build/main
+   ./build/optimizer
    ```
 
 3. Analyze the profiling results:
    ```bash
-   gprof build/main gmon.out > profile_analysis.txt
+   gprof build/optimizer gmon.out > profile_analysis.txt
    ```
 
 4. View the analysis:

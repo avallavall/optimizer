@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "problems/sudoku/sudoku_solver.h"
+#include "problem_manager/problem_manager.h"
 
-int main() { 
+int main(void) {
     #ifdef DEBUG
-        printf("Debug mode\n");
+        printf("[DEBUG] Starting in debug mode\n");
     #endif
-    manage_sudoku_problem();
-    return 0;
+    
+    problem_manager_dispatch_solver(PROBLEM_MANAGER_TYPE_SUDOKU);
+    
+    return EXIT_SUCCESS;
 }

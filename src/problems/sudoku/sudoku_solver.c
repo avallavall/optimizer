@@ -64,10 +64,6 @@ SCIP_RETCODE init_model() {
     return SCIP_OKAY;
 }
 
-void create_variables() {
-    memset(vars, 0, sizeof(vars));
-}
-
 SCIP_RETCODE add_variables() {
     for(int i = 0; i < 9; i++) {
         for(int j = 0; j < 9; j++) {
@@ -216,7 +212,8 @@ SCIP_RETCODE create_constraints() {
     return SCIP_OKAY;
 }
 
-SCIP_RETCODE fix_variables() {
+
+SCIP_RETCODE fix_variables() { // Fix variables based on initial puzzle
     for(int i = 0; i < 9; i++) {
         for(int j = 0; j < 9; j++) {
             if(puzzle[i][j] > 0) {
@@ -363,20 +360,16 @@ SCIP_RETCODE manage_sudoku_problem() {
         printf("Debug mode\n");
     #endif
 
-    // Initialize and print the puzzle
     create_puzzle();
     printf("Initial puzzle:\n");
     print_puzzle();
 
-    // Initialize the model
     retcode = init_model();
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Error initializing model: %d\n", retcode);
         return EXIT_FAILURE;
     }
 
-    // Create and add variables
-    create_variables();
     retcode = add_variables();
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Error adding variables: %d\n", retcode);
@@ -384,7 +377,6 @@ SCIP_RETCODE manage_sudoku_problem() {
         return EXIT_FAILURE;
     }
 
-    // Create constraints
     retcode = create_constraints();
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Error creating constraints: %d\n", retcode);
@@ -392,7 +384,6 @@ SCIP_RETCODE manage_sudoku_problem() {
         return EXIT_FAILURE;
     }
 
-    // Fix variables based on initial puzzle
     retcode = fix_variables();
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Error fixing variables: %d\n", retcode);
@@ -400,7 +391,6 @@ SCIP_RETCODE manage_sudoku_problem() {
         return EXIT_FAILURE;
     }
 
-    // Solve the puzzle
     retcode = solve();
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Error solving the puzzle: %d\n", retcode);
@@ -408,7 +398,6 @@ SCIP_RETCODE manage_sudoku_problem() {
         return EXIT_FAILURE;
     }
 
-    // Print the solution and clean up
     print_solution();
     
     retcode = free_model();

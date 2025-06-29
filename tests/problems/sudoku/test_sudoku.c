@@ -31,6 +31,7 @@ Test(sudoku, test_solution) {
     SCIP_RETCODE retcode;
     
     // Initialize puzzle
+    printf("Creating puzzle...\n");
     create_puzzle();
     
     // Initialize model with error checking
@@ -39,6 +40,33 @@ Test(sudoku, test_solution) {
     if (retcode != SCIP_OKAY) {
         fprintf(stderr, "Failed to initialize model: %d\n", retcode);
         cr_assert_fail("Failed to initialize model");
+    }
+
+    // Add variables to the model
+    printf("Adding variables to model...\n");
+    retcode = add_variables();
+    if (retcode != SCIP_OKAY) {
+        fprintf(stderr, "Failed to add variables: %d\n", retcode);
+        free_model();
+        cr_assert_fail("Failed to add variables");
+    }
+    
+    // Create constraints
+    printf("Creating constraints...\n");
+    retcode = create_constraints();
+    if (retcode != SCIP_OKAY) {
+        fprintf(stderr, "Failed to create constraints: %d\n", retcode);
+        free_model();
+        cr_assert_fail("Failed to create constraints");
+    }
+    
+    // Fix variables based on the puzzle
+    printf("Fixing variables...\n");
+    retcode = fix_variables();
+    if (retcode != SCIP_OKAY) {
+        fprintf(stderr, "Failed to fix variables: %d\n", retcode);
+        free_model();
+        cr_assert_fail("Failed to fix variables");
     }
     
     // Solve the puzzle with error checking
@@ -53,7 +81,11 @@ Test(sudoku, test_solution) {
     // Verify the solution is valid
     printf("Verifying solution...\n");
     
-    // Simple check: ensure no zeros in the solution
+    // Print the solution for debugging
+    printf("Solution found:\n");
+    print_solution();
+    
+    // Check that the solution is valid
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
             if (puzzle[i][j] < 1 || puzzle[i][j] > 9) {

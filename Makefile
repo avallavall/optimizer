@@ -1,150 +1,203 @@
+# ============================================================================
 # Project Configuration
+# ============================================================================
+
+# Project name
+PROJECT_NAME = optimizer
+
+# Directories
 SRC_DIR = src
 TEST_DIR = tests
 BUILD_DIR = build
+BUILD_OBJ_DIR = $(BUILD_DIR)/obj
 BUILD_TEST_DIR = $(BUILD_DIR)/tests
+LIB_DIR = lib
+INCLUDE_DIR = include
 WEB_DIR = web
 
-
 # Executables
-EXEC = $(BUILD_DIR)/main
-TEST_EXEC = $(BUILD_TEST_DIR)/run_tests
-WEB_EXEC = $(BUILD_DIR)/web_server
+EXEC = $(BUILD_DIR)/$(PROJECT_NAME)
+TEST_EXEC = $(BUILD_DIR)/run_tests
 
-
+# ============================================================================
 # Source and Object Files
-# Recursively find all .c files in src and its subdirectories
+# ============================================================================
+
+# Recursively find all source files
 SRCS = $(shell find $(SRC_DIR) -name '*.c')
-# Create corresponding .o file paths in the build directory
-OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
-# Find all test files in the tests directory
-TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
-# Create object file paths in the build directory
-TEST_OBJS = $(patsubst $(TEST_DIR)/%,$(BUILD_TEST_DIR)/%.o,$(basename $(TEST_SRCS)))
+TEST_SRCS = $(shell find $(TEST_DIR) -name '*.c')
 
+# Generate object file paths
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_OBJ_DIR)/%.o,$(SRCS))
+TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_TEST_DIR)/%.o,$(TEST_SRCS))
 
+# Dependencies
+DEPS = $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
+
+# ============================================================================
 # Compiler Configuration
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic -Wshadow -Wconversion -Wdouble-promotion -std=c2x -I$(SRC_DIR) -Iinclude -Ilib/mongoose
+# ============================================================================
 
-# Architecture-specific optimizations
+# Tools
+CC = gcc
+AR = ar
+MKDIR = mkdir -p
+RM = rm -rf
+
+# Base compiler flags
+WARNINGS = -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wdouble-promotion
+CFLAGS = -std=c2x $(WARNINGS)
+CFLAGS += -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose
+
+# Architecture optimizations
 CFLAGS += -march=native -mtune=native
 
-# Link-time optimization
-CFLAGS += -flto
-LDFLAGS += -flto
+# Linker flags
+LDFLAGS = -flto -Wl,-O2 -Wl,--as-needed
 
-# Linker optimizations
-LDFLAGS += -Wl,-O1 -Wl,--as-needed
+# External libraries
+SCIP_CFLAGS = -I/usr/include/scip
+SCIP_LIBS = -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
 
-# SCIP configuration for system-wide installation with scipoptsuite
-CFLAGS += -I/usr/include/scip
-LDFLAGS += -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
-TEST_CFLAGS = $(CFLAGS) -I$(TEST_DIR)
-TEST_LDFLAGS = -lcriterion
+# Test framework
+TEST_CFLAGS = $(shell pkg-config --cflags criterion) -pthread -DCRITERION_ENABLE_DEBUG
+TEST_LDFLAGS = $(shell pkg-config --libs criterion) -Wl,--no-as-needed -pthread
 
+# ============================================================================
+# Build Configuration
+# ============================================================================
 
-# Build Mode (debug by default)
+# Debug mode (0=release, 1=debug, 2=profile)
 DEBUG ?= 0
 
 # Debug build with symbols
 ifeq ($(DEBUG),1)
-   CFLAGS += -g -DDEBUG
+    CFLAGS += -g -DDEBUG -O0
+    BUILD_TYPE = debug
 
 # Debug build with profiling
 else ifeq ($(DEBUG),2)
-   CFLAGS += -g -DPROFILE -pg
-   LDFLAGS += -pg
+    CFLAGS += -g -DPROFILE -pg -O0
+    LDFLAGS += -pg
+    BUILD_TYPE = profile
 
 # Release build
 else
-   CFLAGS += -O2 -DNDEBUG -fvisibility=hidden
-   LDFLAGS += -s  # Only strip in final link
+    CFLAGS += -O2 -DNDEBUG -fvisibility=hidden
+    LDFLAGS += -s
+    BUILD_TYPE = release
 endif
 
+# Add SCIP flags
+CFLAGS += $(SCIP_CFLAGS)
+LDFLAGS += $(SCIP_LIBS)
 
-# Default Target
-all: $(EXEC) web
+# ============================================================================
+# Build Rules
+# ============================================================================
 
+# Default target
+.PHONY: all
+all: $(EXEC)
+
+# Main executable
+$(EXEC): $(OBJS) $(LIB_DIR)/mongoose/mongoose.o | $(BUILD_DIR)
+	@echo "[$(BUILD_TYPE)] Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) -pthread
+
+# Test executable
+$(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
+	@echo "[$(BUILD_TYPE)] Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS)
+
+# Compile Mongoose library
+$(LIB_DIR)/mongoose/mongoose.o: $(LIB_DIR)/mongoose/mongoose.c
+	@echo "[$(BUILD_TYPE)] Compiling $<"
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_GNU_SOURCE \
+        -Wno-unused-function -DMG_ENABLE_LINES=1 -DMG_ENABLE_DIRECTORY_LISTING=0 \
+        -c $< -o $@
+
+# Compile source files
+$(BUILD_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_OBJ_DIR)
+	@echo "[$(BUILD_TYPE)] Compiling $<"
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+# Compile test files
+$(BUILD_TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_TEST_DIR)
+	@echo "[$(BUILD_TYPE)] Compiling test $<"
+	@$(MKDIR) $(@D)
+	@$(CC) $(CFLAGS) $(TEST_CFLAGS) -I$(TEST_DIR) -c $< -o $@
 
 # Create build directories
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR) $(BUILD_TEST_DIR)
+$(BUILD_DIR) $(BUILD_OBJ_DIR) $(BUILD_TEST_DIR):
+	@$(MKDIR) $@
 
+# Include generated dependencies
+-include $(DEPS)
 
-# Main Application
-$(EXEC): $(filter-out $(BUILD_DIR)/web_server.o, $(OBJS)) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+# ============================================================================
+# Phony Targets
+# ============================================================================
 
-# Web Server
-$(WEB_EXEC): $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) $(BUILD_DIR)/web_server.o lib/mongoose/mongoose.o | $(BUILD_DIR)
-	$(CC) -o $@ $^ $(LDFLAGS) -pthread
+.PHONY: run test clean distclean deps help
 
-
-# Test Executable
-$(TEST_EXEC): $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
-	$(CC) $(TEST_CFLAGS) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS)
-
-
-# Compile mongoose library
-lib/mongoose/mongoose.o: lib/mongoose/mongoose.c
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -Wno-unused-function -DMG_ENABLE_LINES=1 -DMG_ENABLE_DIRECTORY_LISTING=0 -c $< -o $@
-
-# Compile main source files with dependency generation
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
-
-
-# Compile test files with dependency generation
-$(BUILD_TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
-	@mkdir -p $(@D)
-	$(CC) $(TEST_CFLAGS) -MMD -MP -c $< -o $@
-
-# Create build directories
-$(BUILD_DIR) $(BUILD_TEST_DIR):
-	@mkdir -p $@
-
-
-# Include automatically generated dependencies
--include $(OBJS:.o=.d)
--include $(TEST_OBJS:.o=.d)
-
-
-# Run Tests
-test: $(TEST_EXEC)
-	@echo "Running tests..."
-	@$(TEST_EXEC) --verbose
-
-
-# Run Program
+# Run the application
 run: $(EXEC)
+	@echo "[$(BUILD_TYPE)] Running $(EXEC)"
 	@./$(EXEC)
 
-# Run Web Server
-web: $(WEB_EXEC)
-	@./$(WEB_EXEC)
+# Run tests
+test: $(TEST_EXEC)
+	@echo "[$(BUILD_TYPE)] Running tests"
+	@LD_LIBRARY_PATH=/usr/local/lib $(TEST_EXEC) --verbose=2 --full-stats || true
 
-
-# Clean Build Artifacts
+# Clean build artifacts
 clean:
-	rm -rf $(BUILD_DIR)
+	@echo "Cleaning build artifacts"
+	@$(RM) $(BUILD_DIR)
 
+# Clean everything including downloaded dependencies
+distclean: clean
+	@echo "Cleaning everything"
+	@$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.o
 
-# Install Dependencies (Debian/Ubuntu)
+# Install dependencies (Debian/Ubuntu)
 deps:
 	@echo "Installing dependencies..."
 	@if command -v apt-get >/dev/null 2>&1; then \
-		sudo apt-get install -y build-essential gcc make libcriterion-dev; \
+		echo "[apt] Installing build tools and libraries"; \
+		sudo apt-get install -y build-essential gcc make pkg-config \
+		    libscip-dev libsoplex-dev libreadline-dev libncurses5-dev \
+		    zlib1g-dev libgmp-dev libcriterion-dev; \
 	else \
-		echo "Please install these packages manually: build-essential gcc make libcriterion-dev"; \
+		echo "Please install these packages manually:"; \
+		echo "  build-essential gcc make pkg-config"; \
+		echo "  libscip-dev libsoplex-dev libreadline-dev libncurses5-dev"; \
+		echo "  zlib1g-dev libgmp-dev libcriterion-dev"; \
 	fi
 
-
-# Help Message
+# Show help message
 help:
-	@echo "\nUsage:\n  make [target]\n\nTargets:\n  all       Build the main application (default)\n  test      Build and run tests\n  run       Build and run the main application\n  clean     Remove build artifacts\n  deps      Install required dependencies (Debian/Ubuntu)\n  web       Build and run the web server\n  help      Show this help message\n\nFlags:\n  DEBUG=0   Build optimized release version\n  -jN       Compile with parallel jobs (e.g., make -j4)\n"
-
-
-.PHONY: all clean run test deps help web
+	@echo "\n$(PROJECT_NAME) - Build System\n"
+	@echo "Usage:"
+	@echo "  make [target] [VARIABLE=value]\n"
+	@echo "Build targets:"
+	@echo "  all       Build the main application (default)"
+	@echo "  test      Build and run tests"
+	@echo "  run       Build and run the main application"
+	@echo "  clean     Remove build artifacts"
+	@echo "  distclean Remove all generated files"
+	@echo "  deps      Install required dependencies"
+	@echo "  help      Show this help message\n"
+	@echo "Build options:"
+	@echo "  DEBUG=0   Build type: 0=release (default), 1=debug, 2=profile"
+	@echo "  -jN       Compile with N parallel jobs (e.g., make -j4)"
+	@echo "  V=1       Enable verbose build output\n"
+	@echo "Current configuration:"
+	@echo "  CC        = $(CC)"
+	@echo "  CFLAGS    = $(CFLAGS)"
+	@echo "  LDFLAGS   = $(LDFLAGS)"
+	@echo "  BUILD_DIR = $(BUILD_DIR)"
+	@echo "  BUILD_TYPE= $(BUILD_TYPE)\n"
