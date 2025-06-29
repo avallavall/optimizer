@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "problem_manager/problem_manager.h"
+#include "webserver/restserver.h"
 
 int main(void) {
     #ifdef DEBUG
@@ -9,5 +10,7 @@ int main(void) {
     
     problem_manager_dispatch_solver(PROBLEM_MANAGER_TYPE_SUDOKU);
     
+    start_webserver();
+
     return EXIT_SUCCESS;
 }

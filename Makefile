@@ -17,7 +17,7 @@ WEB_DIR = web
 
 # Executables
 EXEC = $(BUILD_DIR)/$(PROJECT_NAME)
-TEST_EXEC = $(BUILD_DIR)/run_tests
+TEST_EXEC = $(BUILD_TEST_DIR)/run_tests
 
 # ============================================================================
 # Source and Object Files
@@ -58,6 +58,9 @@ LDFLAGS = -flto -Wl,-O2 -Wl,--as-needed
 # External libraries
 SCIP_CFLAGS = -I/usr/include/scip
 SCIP_LIBS = -lscip -lsoplex -lreadline -lncurses -lm -lz -lgmp -lstdc++
+
+# Mongoose library
+MONGOOSE_LIB = $(LIB_DIR)/mongoose/mongoose.o
 
 # Test framework
 TEST_CFLAGS = $(shell pkg-config --cflags criterion) -pthread -DCRITERION_ENABLE_DEBUG
@@ -101,14 +104,14 @@ LDFLAGS += $(SCIP_LIBS)
 all: $(EXEC)
 
 # Main executable
-$(EXEC): $(OBJS) $(LIB_DIR)/mongoose/mongoose.o | $(BUILD_DIR)
+$(EXEC): $(OBJS) $(MONGOOSE_LIB) | $(BUILD_DIR)
 	@echo "[$(BUILD_TYPE)] Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) -pthread
 
 # Test executable
-$(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) | $(BUILD_DIR)
+$(TEST_EXEC): $(filter-out $(BUILD_OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) $(MONGOOSE_LIB) | $(BUILD_DIR)
 	@echo "[$(BUILD_TYPE)] Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS)
+	@$(CC) -o $@ $^ $(LDFLAGS) $(TEST_LDFLAGS) -pthread
 
 # Compile Mongoose library
 $(LIB_DIR)/mongoose/mongoose.o: $(LIB_DIR)/mongoose/mongoose.c
@@ -151,7 +154,7 @@ run: $(EXEC)
 # Run tests
 test: $(TEST_EXEC)
 	@echo "[$(BUILD_TYPE)] Running tests"
-	@LD_LIBRARY_PATH=/usr/local/lib $(TEST_EXEC) --verbose=2 --full-stats || true
+	@cd $(BUILD_TEST_DIR) && LD_LIBRARY_PATH=/usr/local/lib ./run_tests --verbose=2 --full-stats || true
 
 # Clean build artifacts
 clean:

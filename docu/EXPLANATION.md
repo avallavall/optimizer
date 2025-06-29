@@ -1,16 +1,43 @@
-# Sudoku Solver with SCIP - Implementation Details
+# Optimizer - Implementation Details
 
-This document explains the structure and functionality of the Sudoku solver implemented in `src/main.c` using the SCIP Optimization Suite.
+This document explains the structure and functionality of the Optimizer application, which includes a Sudoku solver using the SCIP Optimization Suite and a web server interface.
 
-## Program Flow
+## Architecture Overview
 
-### 1. Initialization
+The application consists of three main components:
+1. **Main Application** (`src/main.c`): Entry point that initializes and coordinates other components
+2. **Problem Manager** (`src/problem_manager/`): Dispatches to specific problem solvers
+3. **Sudoku Solver** (`src/problems/sudoku/`): Implements Sudoku solving using SCIP
+4. **Web Server** (`src/webserver/`): Provides HTTP API for interacting with the solvers
+
+## Web Server Component
+
+### Key Features
+- Built using Mongoose networking library
+- Serves on `http://localhost:8421`
+- Provides a simple API endpoint at `/`
+- Event-driven architecture for handling HTTP requests
+
+### Implementation Details
+- **Event Handler**: `fn()` processes incoming HTTP messages
+  - Handles different HTTP methods and routes
+  - Currently responds to GET requests to the root endpoint
+- **Server Initialization**: `start_webserver()`
+  - Initializes the Mongoose event manager
+  - Sets up listening on the configured port
+  - Enters an event loop to handle incoming requests
+
+## Sudoku Solver with SCIP
+
+### Program Flow
+
+#### 1. Initialization
 - **SCIP Environment Setup**:
   - Creates a SCIP environment using `SCIPcreate()`
   - Includes default SCIP plugins with `SCIPincludeDefaultPlugins()`
   - Creates a new SCIP problem instance with `SCIPcreateProbBasic()`
 
-### 2. Variable Creation
+#### 2. Variable Creation
 - **Binary Variables**:
   - Creates a 9x9x9 3D array to store binary variables `vars[i][j][k]`
   - Each variable represents whether number `k+1` appears in cell `(i,j)`
@@ -18,21 +45,21 @@ This document explains the structure and functionality of the Sudoku solver impl
   - All variables are binary (0 or 1) with bounds [0,1]
   - Variables are added to the SCIP problem using `SCIPaddVar()`
 
-### 3. Constraint Definition
+#### 3. Constraint Definition
 
-#### a) Row Constraints
+##### a) Row Constraints
 - Ensures each number 1-9 appears exactly once per row
 - For each row `i` and number `k`:
   - Creates a linear constraint: sum(x_ijk for j=0..8) = 1
   - Added using `SCIPcreateConsBasicLinear()` and `SCIPaddCons()`
 
-#### b) Column Constraints
+##### b) Column Constraints
 - Ensures each number 1-9 appears exactly once per column
 - For each column `j` and number `k`:
   - Creates a linear constraint: sum(x_ijk for i=0..8) = 1
   - Similar structure to row constraints
 
-#### c) Subgrid (3x3) Constraints
+##### c) Subgrid (3x3) Constraints
 - Ensures each number 1-9 appears exactly once in each 3x3 subgrid
 - For each subgrid and number `k`:
   - Creates a linear constraint summing over the 9 cells in the subgrid

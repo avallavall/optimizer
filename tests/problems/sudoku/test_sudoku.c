@@ -14,7 +14,6 @@ Test(sudoku, test_puzzle_creation) {
         {0, 0, 0, 0, 8, 0, 0, 7, 9}
     };
     
-    // Initialize puzzle
     create_puzzle();
     
     // Verify puzzle initialization
@@ -100,10 +99,4 @@ Test(sudoku, test_solution) {
     printf("Cleaning up...\n");
     free_model();
     printf("Test completed successfully\n");
-}
-
-Test(sudoku, test_invalid_puzzle) {
-    // This test would check behavior with an invalid puzzle
-    // Currently just a placeholder
-    cr_assert(1, "Placeholder for invalid puzzle test");
 }
