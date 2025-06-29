@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "problem_manager/problem_manager.h"
-#include "webserver/restserver.h"
+#include "restserver/restserver.h"
 
 int main(void) {
     #ifdef DEBUG

@@ -3,10 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "webserver/restserver.h"
+#include "restserver/restserver.h"
+
+#define BASE_URL "http://localhost"
+#define PORT 8421
+#define API_PATH "/api/solve"
 
 // Event handler function
-static void fn(struct mg_connection *c, int ev, void *ev_data) {
+static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
     (void)c;  // Unused parameter
     
     if (ev == MG_EV_HTTP_MSG) {
@@ -32,7 +36,7 @@ int start_webserver(void) {
     mg_mgr_init(&mgr);  // Initialize
     
     // Start HTTP listener
-    if ((c = mg_http_listen(&mgr, url, fn, NULL)) == NULL) {
+    if ((c = mg_http_listen(&mgr, url, event_handler, NULL)) == NULL) {
         fprintf(stderr, "Failed to start server on port %d\n", PORT);
         return 1;
     }
