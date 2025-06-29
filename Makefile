@@ -47,13 +47,13 @@ RM = rm -rf
 # Base compiler flags
 WARNINGS = -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wdouble-promotion
 CFLAGS = -std=c2x $(WARNINGS)
-CFLAGS += -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose
+CFLAGS += -I$(INCLUDE_DIR) -I$(SRC_DIR) -I$(LIB_DIR)/mongoose $(SCIP_CFLAGS)
 
 # Architecture optimizations
 CFLAGS += -march=native -mtune=native
 
 # Linker flags
-LDFLAGS = -flto -Wl,-O2 -Wl,--as-needed
+LDFLAGS = -flto -Wl,-O2,--as-needed $(SCIP_LIBS)
 
 # External libraries
 SCIP_CFLAGS = -I/usr/include/scip

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "restserver/restserver.h"
 
 #define BASE_URL "http://localhost"
@@ -18,18 +19,27 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
         
         // Handle GET requests to root endpoint
         if (mg_strcmp(hm->method, mg_str("GET")) == 0 && mg_strcmp(hm->uri, mg_str("/")) == 0) {
-            #ifdef DEBUG
-                printf("[DEBUG] Received GET request\n");
-            #endif
+            printf("Received GET request on path %.*s\n", (int)hm->uri.len, hm->uri.buf);
             mg_http_reply(c, 200, "Content-Type: text/plain\r\n", "Hello from Mongoose!\n");
         }
     }
 }
 
+// Function to print help message
+static void print_help(void) {
+    printf("\n=== Optimizer Server Commands ===\n");
+    printf("h   - Show this help message\n");
+    printf("1   - Stop the server and exit\n");
+    printf("\n");
+}
+
 int start_webserver(void) {
     struct mg_mgr mgr;  // Event manager
     struct mg_connection *c;
-
+    int running = 1;
+    char input;
+    fd_set fds;
+    
     char url[64];
     snprintf(url, sizeof(url), BASE_URL ":%d", PORT);
 
@@ -42,10 +52,38 @@ int start_webserver(void) {
     }
 
     printf("Server started on port %d\n", PORT);
+    printf("Press 'h' for help\n");
     
-    // Infinite event loop
-    while (true) {
-        mg_mgr_poll(&mgr, 1000);
+    // Main event loop
+    while (running) {
+        // Handle HTTP requests
+        mg_mgr_poll(&mgr, 100);
+        
+        // Check for keyboard input
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+        
+        // Check for input without blocking
+        if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &(struct timeval){0}) > 0) {
+            if (read(STDIN_FILENO, &input, 1) > 0) {
+                switch (input) {
+                    case 'h':
+                    case 'H':
+                    case '?':
+                        print_help();
+                        break;
+                    case '1':
+                        printf("\nStopping server...\n");
+                        running = 0;
+                        break;
+                    case '\n':  // Ignore newline
+                        break;
+                    default:
+                        printf("\nUnknown command. Press 'h' for help.\n");
+                        break;
+                }
+            }
+        }
     }
 
     mg_mgr_free(&mgr);

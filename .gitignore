@@ -7,6 +7,47 @@ build/
 # VS Code settings
 .vscode/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv
+venv/
+ENV/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
 # Prerequisites
 *.d
 
@@ -59,5 +100,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# gprof
 profile.txt
 profile_analysis.txt
+callgraph.png
