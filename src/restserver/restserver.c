@@ -10,10 +10,24 @@
 #define PORT 8421
 #define API_PATH "/api/solve"
 
+// Function to handle POST /api/solve
+static void handle_solve_post(struct mg_connection *c, struct mg_http_message *hm) {
+    printf("Received POST request to /api/solve\n");
+    printf("Request body: %.*s\n", (int)hm->body.len, hm->body.buf);
+    
+    // Here you would process the request body and generate a response
+    // For now, we'll just echo back the request body
+    mg_http_reply(c, 200, 
+                 "Content-Type: application/json\r\n"
+                 "Access-Control-Allow-Origin: *\r\n"
+                 "Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n"
+                 "Access-Control-Allow-Headers: Content-Type\r\n",
+                 "{\"status\":\"success\",\"data\":%.*s}", 
+                 (int)hm->body.len, hm->body.buf);
+}
+
 // Event handler function
 static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
-    (void)c;  // Unused parameter
-    
     if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message *hm = (struct mg_http_message *)ev_data;
         
@@ -21,6 +35,27 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
         if (mg_strcmp(hm->method, mg_str("GET")) == 0 && mg_strcmp(hm->uri, mg_str("/")) == 0) {
             printf("Received GET request on path %.*s\n", (int)hm->uri.len, hm->uri.buf);
             mg_http_reply(c, 200, "Content-Type: text/plain\r\n", "Hello from Mongoose!\n");
+        }
+        // Handle POST requests to /api/solve
+        else if (mg_strcmp(hm->method, mg_str("POST")) == 0 && mg_strcmp(hm->uri, mg_str("/api/solve")) == 0) {
+            handle_solve_post(c, hm);
+        }
+        // Handle preflight OPTIONS request for CORS
+        else if (mg_strcmp(hm->method, mg_str("OPTIONS")) == 0) {
+            mg_http_reply(c, 200, 
+                         "Access-Control-Allow-Origin: *\r\n"
+                         "Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n"
+                         "Access-Control-Allow-Headers: Content-Type\r\n"
+                         "Content-Length: 0\r\n"
+                         "\r\n", "");
+        }
+        // Handle 404 for all other routes
+        else {
+            fprintf(stderr, "Error: No handler for %.*s %.*s with body %.*s\n", 
+                    (int)hm->method.len, hm->method.buf,
+                    (int)hm->uri.len, hm->uri.buf,
+                    (int)hm->body.len, hm->body.buf);
+            mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "Not Found\n");
         }
     }
 }
