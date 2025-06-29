@@ -1,3 +1,6 @@
+# Profile analysis
+profile_analysis.txt
+
 # Build directory
 build/
 
@@ -57,3 +60,4 @@ Module.symvers
 Mkfile.old
 dkms.conf
 profile.txt
+profile_analysis.txt
