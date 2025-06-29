@@ -160,6 +160,7 @@ test: $(TEST_EXEC)
 clean:
 	@echo "Cleaning build artifacts"
 	@$(RM) $(BUILD_DIR)
+	@$(RM) $(LIB_DIR)/mongoose/*.o
 
 # Clean everything including downloaded dependencies
 distclean: clean
